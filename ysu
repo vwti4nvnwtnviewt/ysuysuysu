@@ -1,0 +1,121 @@
+local config = {
+    groupIds = {693335996},
+    notificationDuration = 5,
+    toggleKey = Enum.KeyCode.F4,
+    persistentCounter = true,
+    autoKickOnStaffJoin = true,
+    joinColor = Color3.fromRGB(255, 0, 0),
+    leaveColor = Color3.fromRGB(0, 255, 0),
+    counterPosition = UDim2.new(0, 10, 0, 10),
+    counterSize = UDim2.new(0, 100, 0, 25)
+}
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local staffCount = 0
+local counterLabel
+
+if config.persistentCounter then
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "StaffCounterGUI"
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    counterLabel = Instance.new("TextLabel")
+    counterLabel.Size = config.counterSize
+    counterLabel.Position = config.counterPosition
+    counterLabel.BackgroundTransparency = 1
+    counterLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+    counterLabel.TextScaled = true
+    counterLabel.Font = Enum.Font.Oswald
+    counterLabel.Text = "Staff: 0"
+    counterLabel.Parent = screenGui
+end
+
+local function isInConfiguredGroup(player)
+    for _, groupId in ipairs(config.groupIds) do
+        local success, result = pcall(function()
+            return player:IsInGroup(groupId)
+        end)
+        if success and result then return true end
+    end
+    return false
+end
+
+local function updateStaffCount()
+    staffCount = 0
+    for _, plr in pairs(Players:GetPlayers()) do
+        if isInConfiguredGroup(plr) then
+            staffCount += 1
+        end
+    end
+    if counterLabel then
+        counterLabel.Text = "Staff: " .. staffCount
+        counterLabel.TextColor3 = staffCount > 0 and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(100, 100, 100)
+    end
+end
+
+local function showNotification(text, color)
+    local screenGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("StaffNotifications")
+    if not screenGui then
+        screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "StaffNotifications"
+        screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    end
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 170, 0, 50)
+    label.Position = UDim2.new(0.5, -125, 0, 50 + (#screenGui:GetChildren() - 1) * 60)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = color
+    label.TextScaled = true
+    label.Font = Enum.Font.Oswald
+    label.Parent = screenGui
+
+    spawn(function()
+        wait(config.notificationDuration)
+        for i = 0, 1, 0.05 do
+            label.TextTransparency = i
+            wait(0.03)
+        end
+        label:Destroy()
+    end)
+end
+
+local function notifyPlayer(player, action)
+    local text = player.Name .. (action == "join" and " joined" or " left")
+    local color = action == "join" and config.joinColor or config.leaveColor
+    showNotification(text, color)
+    updateStaffCount()
+end
+
+for _, plr in pairs(Players:GetPlayers()) do
+    if isInConfiguredGroup(plr) then
+        notifyPlayer(plr, "join")
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if isInConfiguredGroup(plr) then
+        notifyPlayer(plr, "join")
+        if config.autoKickOnStaffJoin then
+            LocalPlayer:Kick("staff joined Lol.. - zai.")
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if isInConfiguredGroup(plr) then
+        notifyPlayer(plr, "leave")
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == config.toggleKey then
+        updateStaffCount()
+        showNotification("Staff Count: " .. staffCount, Color3.fromRGB(0, 0, 0))
+    end
+end)
