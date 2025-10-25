@@ -120,7 +120,7 @@ local function notify_player(player, action, counter_label)
     local local_player = game:GetService("Players").LocalPlayer
 
     if auto_kick_enabled and staff_count > 0 then
-        local_player:Kick("staff detected in server - zai")
+        local_player:Kick("staff detected in server - kill jews")
     end
 end
 
@@ -158,7 +158,7 @@ local function init()
             local status = auto_kick_enabled and "enabled" or "disabled"
             show_notification("autokick " .. status, Color3.fromRGB(0, 0, 0))
             if auto_kick_enabled and update_staff_count(counter_label) > 0 then
-                game:GetService("Players").LocalPlayer:Kick("staff detected in server - zai")
+                game:GetService("Players").LocalPlayer:Kick("staff detected in server - kill niggers")
             end
 
         elseif input.KeyCode == config.staff_list_key then
